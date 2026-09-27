@@ -2,7 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My service hours</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Spectral:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -104,7 +105,7 @@
 <body>
   <main>
     <header class="band">
-      <p class="chapter"><?= chapter ?></p>
+      <p class="chapter">National Honor Society</p>
       <h1>My service hours</h1>
     </header>
 
@@ -113,12 +114,10 @@
         <label for="sid">Student ID</label>
         <input id="sid" inputmode="numeric" autocomplete="off" required>
       </div>
-      <? if (askName) { ?>
-      <div class="field">
+      <div class="field" id="nameField">
         <label for="lname">Last name</label>
         <input id="lname" autocomplete="family-name" required>
       </div>
-      <? } ?>
       <button type="submit" id="go">Show my hours</button>
       <p class="hint">Your student ID is the number in your school email address.</p>
     </form>
@@ -142,6 +141,11 @@
   </main>
 
   <script>
+    // ---- Settings: edit these two lines ----
+    const API_URL  = 'https://script.google.com/macros/s/AKfycbzwn2D-2oppuBAUDY4XE2b53TYDhvegv4bLLd3fkDLgWFrpyZ2rZJYOwE8VrRzDDpHNLQ/exec';  // the Apps Script web app URL ending in /exec
+    const ASK_NAME = true;                 // match Code.gs: true if NAME_COLUMN is set, false if ''
+    // ----------------------------------------
+    if (!ASK_NAME) document.getElementById('nameField').remove();
     const $ = id => document.getElementById(id);
     const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
@@ -154,11 +158,12 @@
 
       $('go').disabled = true;
       $('go').textContent = 'Looking up…';
-      google.script.run
-        .withSuccessHandler(d => { reset(); render(d); })
-        .withFailureHandler(() => { reset(); showMessage('Your hours didn’t load',
-          'Try again in a minute. If it keeps failing, let an NHS officer know.'); })
-        .lookupHours(id, last);
+      const url = API_URL + '?id=' + encodeURIComponent(id) + '&name=' + encodeURIComponent(last);
+      fetch(url)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(d => { reset(); render(d); })
+        .catch(() => { reset(); showMessage('Your hours didn’t load',
+          'Check your connection and try again. If it keeps failing, let an NHS officer know.'); });
     });
 
     function reset() {
@@ -169,6 +174,8 @@
     function render(d) {
       if (d.error === 'BAD_ID') return showMessage('That ID doesn’t look right', 'Enter only the digits of your student ID.');
       if (d.error === 'NEED_NAME') return showMessage('Enter your last name', 'Spell it the way you did on the hours form.');
+      if (d.error === 'SERVER') return showMessage('Your hours didn’t load',
+        'Something went wrong on our end. Let an NHS officer know.');
       if (d.error === 'NO_MATCH') return showMessage('No hours found',
         'Nothing matches that ID' + ($('lname') ? ' and last name' : '') +
         '. Check for typos. If you’ve submitted hours and this still shows up, contact an NHS officer.');

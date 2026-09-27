@@ -1,6 +1,6 @@
 /**
- * NHS Service Hours web app — server side (student-ID lookup version).
- * Deployed from the NHS Gmail account with access set to "Anyone".
+ * NHS Service Hours — data endpoint for the GitHub Pages site.
+ * Deployed from the NHS Gmail account as a web app with access set to "Anyone".
  * The student types their ID (and last name, if NAME_COLUMN is set).
  * The script finds every master-sheet row whose school email contains
  * that ID and returns ONLY hour totals and dates — no emails or names.
@@ -12,25 +12,33 @@ const CONFIG = {
   EMAIL_COLUMN:    'Email Address',         // exact header text
   HOURS_COLUMN:    'Number of volunteer hours',                 // exact header text
   DATE_COLUMN:     'Date of volunteering',             // '' to hide dates
-  NAME_COLUMN:     'Full name',                      // e.g. 'Full Name' — turns on the last-name check. '' = ID only
+  NAME_COLUMN:     '',                      // e.g. 'Full Name' — turns on the last-name check. '' = ID only
   ACTIVITY_COLUMN: '',                      // '' keeps activities private (recommended for ID lookup)
   STATUS_COLUMN:   '',                      // e.g. 'Status' — '' if you don't approve hours
   APPROVED_VALUE:  'Approved',
   REQUIRED_HOURS:  5,                       // e.g. 20 shows progress; 0 hides it
   SCHOOL_DOMAIN:   'student.travisusd.org',        // domain of the emails in the master sheet
-  CHAPTER_NAME:    'Vanden National Honor Society',
 };
 
-function doGet() {
-  const page = HtmlService.createTemplateFromFile('Index');
-  page.chapter = CONFIG.CHAPTER_NAME;
-  page.askName = !!CONFIG.NAME_COLUMN;
-  return page.evaluate()
-    .setTitle('My service hours')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+/**
+ * Data endpoint. The GitHub Pages site calls:
+ *   <web app URL>?id=123456&name=smith
+ * and gets back JSON. No HTML is served from Apps Script anymore.
+ */
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  let result;
+  try {
+    result = lookupHours(p.id, p.name);
+  } catch (err) {
+    console.error(err);                 // visible under Executions
+    result = { error: 'SERVER' };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-/** Called from the page with what the student typed. */
+/** Looks up one student from what they typed on the site. */
 function lookupHours(rawId, rawLastName) {
   const id = String(rawId || '').replace(/\D/g, '');
   if (id.length < 4 || id.length > 12) return { error: 'BAD_ID' };

@@ -1,6 +1,6 @@
 # NHS Service Hours Lookup
 
-A small Google Apps Script web app that lets National Honor Society members check their own service hours. A student enters their student ID and last name, and the app totals every submission for that student from the chapter's master hours sheet.
+A small web app that lets National Honor Society members check their own service hours. A student enters their student ID and last name, and the app totals every submission for that student from the chapter's master hours sheet.
 
 ## How it works
 
@@ -16,19 +16,26 @@ The page only shows hour totals and dates. It never shows email addresses or nam
 
 | File | Purpose |
 | --- | --- |
-| `Code.gs` | Server code: reads the sheet, matches the student, totals hours |
-| `Index.html` | The page students see (HTML, CSS and client-side JavaScript) |
+| `index.html` | The page students see, hosted on GitHub Pages |
+| `Code.gs` | Google Apps Script data endpoint: reads the sheet, matches the student, returns JSON |
 
-## Setup for deployment
+The page is hosted on GitHub Pages instead of Apps Script because Apps Script pages load blank inside in-app browsers (Instagram, Linktree, Classroom) and break for users signed into multiple Google accounts.
+
+## Setup
+
+**1. Apps Script (the data)**
 
 1. Sign in to the Google account that owns (or can view) the master hours sheet, and go to [script.google.com](https://script.google.com).
-2. Create a new project. Paste `Code.gs` into the default file.
-3. Add an HTML file named exactly `Index` and paste in `Index.html`.
-4. Fill in the `CONFIG` block at the top of `Code.gs` (see below) and save.
-5. Go to **Deploy → New deployment**, choose **Web app**, and set:
-   - **Execute as:** Me
-   - **Who has access:** Anyone
-6. Authorize the script and copy the web app URL. That's the link you share with students.
+2. Create a new project and paste `Code.gs` into the default file. No HTML file is needed.
+3. Fill in the `CONFIG` block (see below) and save.
+4. Go to **Deploy → New deployment**, choose **Web app**, and set **Execute as: Me** and **Who has access: Anyone**.
+5. Authorize the script and copy the web app URL (it ends in `/exec`).
+
+**2. GitHub Pages (the page)**
+
+1. In `index.html`, set `API_URL` to the web app URL, and set `ASK_NAME` to `true` if `NAME_COLUMN` is filled in, or `false` if it's `''`.
+2. Commit and push, then go to the repo's **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/ (root)`, and save.
+3. After a minute, the site is live at `https://<username>.github.io/<repo>/`. That's the link to share (Linktree, QR codes, Classroom).
 
 ## Configuration
 
@@ -47,26 +54,27 @@ All settings are in `CONFIG` at the top of `Code.gs`. Column names must match th
 | `APPROVED_VALUE` | Text in the status column that counts as approved (e.g. `Approved`) |
 | `REQUIRED_HOURS` | Chapter hour requirement to show progress, or `0` to hide it |
 | `SCHOOL_DOMAIN` | The part after `@` in student emails, e.g. `yourschool.org` |
-| `CHAPTER_NAME` | Text shown at the top of the page |
 
 The student ID is taken from the digits in the part of the email before the `@`. If your school's email format is different, update `extractId()` in `Code.gs`.
 
+The chapter name at the top of the page and the colors are edited directly in `index.html`.
+
 ## Updating the live app
 
-After changing the code, save, then go to **Deploy → Manage deployments**, click the pencil icon, set **Version** to **New version**, and click **Deploy**. This keeps the same URL.
+**Page changes** (`index.html`): commit and push. GitHub Pages updates within a minute or two.
 
-Don't use **New deployment** for updates. It creates a new URL, and the old link keeps running the old code.
+**Data changes** (`Code.gs`): save in Apps Script, then go to **Deploy → Manage deployments**, click the pencil icon, set **Version** to **New version**, and click **Deploy**. This keeps the same URL, so `index.html` doesn't need to change.
 
-To test changes before publishing, use the URL under **Deploy → Test deployments**, which always runs the latest saved code.
+Don't use **New deployment** for updates. It creates a new URL, and the site would keep calling the old code.
 
 ## Troubleshooting
 
 | Problem | Likely cause |
 | --- | --- |
-| `Script function not found: doGet` | The deployment is on an old version. Save, then publish a new version. |
-| "Your hours didn't load" | Usually a column header in `CONFIG` doesn't match the sheet. Check **Executions** in the Apps Script editor for the exact error. |
+| "Your hours didn't load" right away | `API_URL` in `index.html` is wrong, or the deployment isn't set to **Anyone**. |
+| "Something went wrong on our end" | Usually a column header in `CONFIG` doesn't match the sheet. Check **Executions** in the Apps Script editor for the exact error. |
 | "No hours found" for a real student | ID or last name typo, or the student submitted hours from a non-school account. |
-| Page won't open on a school account | School sharing policies can block apps owned by outside accounts. Make sure access is set to **Anyone**, not "Anyone with a Google account." |
+| Changes to `index.html` not showing | GitHub Pages can take a couple of minutes; hard-refresh the page. |
 
 ## Privacy notes
 
