@@ -6,9 +6,8 @@ A small Google Apps Script web app that lets National Honor Society members chec
 
 Students log hours through a Google Form that writes to a master Google Sheet. This web app reads that sheet, matches rows by the student ID in each submitter's school email address, and shows:
 
-- Total approved hours
-- Progress toward the chapter requirement (optional)
-- Hours still waiting for officer approval (optional)
+- Total hours
+- Progress toward the chapter requirement
 - A list of submissions with dates and hours
 
 The page only shows hour totals and dates. It never shows email addresses or names, and activity details are hidden by default.
@@ -20,7 +19,7 @@ The page only shows hour totals and dates. It never shows email addresses or nam
 | `Code.gs` | Server code: reads the sheet, matches the student, totals hours |
 | `Index.html` | The page students see (HTML, CSS and client-side JavaScript) |
 
-## Setup
+## Setup for deployment
 
 1. Sign in to the Google account that owns (or can view) the master hours sheet, and go to [script.google.com](https://script.google.com).
 2. Create a new project. Paste `Code.gs` into the default file.
