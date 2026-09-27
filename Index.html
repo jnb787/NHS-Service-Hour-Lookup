@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Spectral:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #13295B;
+      --navy-deep: #0C1C40;
+      --gold: #C9A227;
+      --gold-soft: #F3E7BF;
+      --paper: #EEF1F6;
+      --sheet: #FFFFFF;
+      --ink: #13295B;
+      --muted: #56627A;
+      --rule: #D6DCE7;
+      --focus: #C9A227;
+      --body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --display: 'Spectral', Georgia, 'Times New Roman', serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.5 var(--body); }
+    main {
+      max-width: 42rem; margin: 2rem auto; padding: 0 1.5rem 2.5rem;
+      background: var(--sheet); border: 1px solid var(--rule); border-top: 0;
+    }
+
+    .band {
+      margin: 0 -1.5rem 2rem; padding: 1.5rem 1.5rem 1.35rem;
+      background: var(--navy); color: #fff;
+      border-bottom: 5px solid var(--gold);
+    }
+    .chapter { margin: 0; color: var(--gold-soft); font-weight: 600; letter-spacing: .01em; }
+    h1 { margin: .1rem 0 0; font: 700 2.4rem/1.1 var(--display); }
+
+    form { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: .25rem; flex: 1 1 10rem; }
+    label { font-weight: 600; font-size: .95rem; }
+    input {
+      font: inherit; color: var(--ink); background: #fff;
+      padding: .55rem .7rem; border: 1px solid #A3AEC4; border-radius: 4px;
+    }
+    input:focus { border-color: var(--navy); }
+    button {
+      font: 700 1rem/1 var(--body); color: var(--navy-deep); background: var(--gold);
+      border: 0; border-radius: 4px; padding: .8rem 1.25rem; cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #B8921C; }
+    button:disabled { opacity: .6; cursor: default; }
+    .hint { flex-basis: 100%; margin: 0; color: var(--muted); font-size: .92rem; }
+
+    #result { margin-top: 2.5rem; }
+    .who { margin: 0 0 1rem; color: var(--muted); font-size: .95rem; }
+
+    /* The one loud element: the total inside a gold seal */
+    .stamp {
+      display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 11rem; height: 11rem; border-radius: 50%;
+      background: var(--gold-soft); color: var(--navy);
+      border: 4px double var(--gold);
+      box-shadow: 0 0 0 6px var(--sheet), 0 0 0 8px var(--gold);
+      margin: 8px;
+      animation: press .4s ease-out both;
+    }
+    .stamp .num { font: 700 3.6rem/1 var(--display); }
+    .stamp .unit { font-weight: 600; font-size: 1.05rem; margin-top: .15rem; }
+    @keyframes press {
+      from { transform: scale(1.25); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
+
+    .notes { margin: 1.5rem 0 0; }
+    .notes p { margin: .25rem 0; }
+    .progress { height: .55rem; margin: .5rem 0 .3rem; background: var(--rule); border-radius: 999px; overflow: hidden; }
+    .progress span { display: block; height: 100%; background: var(--gold); }
+
+    h2 { margin: 2.5rem 0 .5rem; font: 700 1.45rem/1.2 var(--display); }
+    .ledger { overflow-x: auto; border-left: 3px solid var(--gold); padding-left: .75rem; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: .55rem .5rem .45rem 0; border-bottom: 1px solid var(--rule); }
+    th { color: var(--muted); font-weight: 600; font-size: .9rem; }
+    td.hrs, th.hrs { text-align: right; padding-right: 0; }
+    .pending { color: var(--muted); font-style: italic; }
+
+    .message { margin-top: 2rem; padding: .9rem 1rem; border-left: 4px solid var(--gold); background: #FBF7E8; }
+    .message strong { display: block; font: 700 1.25rem/1.3 var(--display); margin-bottom: .2rem; }
+    .message p { margin: 0; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 480px) {
+      main { margin: 0; border: 0; min-height: 100vh; padding: 0 1.1rem 2rem; }
+      .band { margin: 0 -1.1rem 1.75rem; padding: 1.25rem 1.1rem 1.1rem; }
+      h1 { font-size: 2rem; }
+      .stamp { width: 9.5rem; height: 9.5rem; }
+      .stamp .num { font-size: 3rem; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="band">
+      <p class="chapter"><?= chapter ?></p>
+      <h1>My service hours</h1>
+    </header>
+
+    <form id="lookup" novalidate>
+      <div class="field">
+        <label for="sid">Student ID</label>
+        <input id="sid" inputmode="numeric" autocomplete="off" required>
+      </div>
+      <? if (askName) { ?>
+      <div class="field">
+        <label for="lname">Last name</label>
+        <input id="lname" autocomplete="family-name" required>
+      </div>
+      <? } ?>
+      <button type="submit" id="go">Show my hours</button>
+      <p class="hint">Your student ID is the number in your school email address.</p>
+    </form>
+
+    <section class="message" id="message" hidden role="alert"></section>
+
+    <section id="result" hidden aria-live="polite">
+      <p class="who" id="who"></p>
+      <div class="stamp" role="img" id="stamp">
+        <span class="num" id="total"></span><span class="unit" id="unit"></span>
+      </div>
+      <div class="notes" id="notes"></div>
+      <h2>Submissions</h2>
+      <div class="ledger">
+        <table>
+          <thead><tr id="headRow"></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const fmt = n => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+    $('lookup').addEventListener('submit', ev => {
+      ev.preventDefault();
+      const id = $('sid').value.trim();
+      const last = $('lname') ? $('lname').value.trim() : '';
+      if (!id) return showMessage('Enter your student ID', 'It’s the number on your school ID card.');
+      if ($('lname') && !last) return showMessage('Enter your last name', 'Spell it the way you did on the hours form.');
+
+      $('go').disabled = true;
+      $('go').textContent = 'Looking up…';
+      google.script.run
+        .withSuccessHandler(d => { reset(); render(d); })
+        .withFailureHandler(() => { reset(); showMessage('Your hours didn’t load',
+          'Try again in a minute. If it keeps failing, let an NHS officer know.'); })
+        .lookupHours(id, last);
+    });
+
+    function reset() {
+      $('go').disabled = false;
+      $('go').textContent = 'Show my hours';
+    }
+
+    function render(d) {
+      if (d.error === 'BAD_ID') return showMessage('That ID doesn’t look right', 'Enter only the digits of your student ID.');
+      if (d.error === 'NEED_NAME') return showMessage('Enter your last name', 'Spell it the way you did on the hours form.');
+      if (d.error === 'NO_MATCH') return showMessage('No hours found',
+        'Nothing matches that ID' + ($('lname') ? ' and last name' : '') +
+        '. Check for typos. If you’ve submitted hours and this still shows up, contact an NHS officer.');
+
+      $('message').hidden = true;
+      $('who').textContent = 'Student ID ' + d.id;
+      $('total').textContent = fmt(d.total);
+      $('unit').textContent = d.total === 1 ? 'hour' : 'hours';
+      $('stamp').setAttribute('aria-label', fmt(d.total) + ' approved service hours');
+
+      // restart the stamp animation on each lookup
+      const stamp = $('stamp');
+      stamp.style.animation = 'none'; void stamp.offsetWidth; stamp.style.animation = '';
+
+      const notes = $('notes');
+      notes.replaceChildren();
+      if (d.required > 0) {
+        const pct = Math.min(100, (d.total / d.required) * 100);
+        const left = Math.max(0, d.required - d.total);
+        notes.append(el('div', { className: 'progress' }, [el('span', { style: 'width:' + pct + '%' })]));
+        notes.append(el('p', { textContent: left > 0
+          ? fmt(left) + ' more to reach the ' + fmt(d.required) + '-hour requirement.'
+          : 'You’ve met the ' + fmt(d.required) + '-hour requirement.' }));
+      }
+      if (d.usesApproval && d.pendingTotal > 0) {
+        notes.append(el('p', { textContent: fmt(d.pendingTotal) +
+          ' more hours are waiting for officer approval and aren’t counted yet.' }));
+      }
+      if (d.skipped > 0) {
+        notes.append(el('p', { textContent: d.skipped +
+          ' submission(s) have an unreadable hours value and aren’t counted. Ask an officer to fix them.' }));
+      }
+
+      const cols = [];
+      if (d.showDates) cols.push(['Date', e => e.date]);
+      if (d.showActivity) cols.push(['Activity', e => e.activity]);
+      if (d.usesApproval) cols.push(['Status', e => e.approved ? 'Approved' : 'Pending']);
+      cols.push(['Hours', e => fmt(e.hours), 'hrs']);
+
+      $('headRow').replaceChildren(...cols.map(([label, , cls]) => el('th', { textContent: label, className: cls || '' })));
+      $('rows').replaceChildren(...d.entries.map(e => {
+        const tr = el('tr', { className: e.approved ? '' : 'pending' });
+        cols.forEach(([, get, cls]) => tr.append(el('td', { textContent: get(e), className: cls || '' })));
+        return tr;
+      }));
+
+      $('result').hidden = false;
+    }
+
+    function showMessage(title, body) {
+      $('message').replaceChildren(el('strong', { textContent: title }), el('p', { textContent: body }));
+      $('message').hidden = false;
+      $('result').hidden = true;
+    }
+
+    // textContent only: sheet data is never inserted as HTML
+    function el(tag, props, children) {
+      const node = Object.assign(document.createElement(tag), props || {});
+      if (props && props.style) node.setAttribute('style', props.style);
+      (children || []).forEach(c => node.append(c));
+      return node;
+    }
+  </script>
+</body>
+</html>
